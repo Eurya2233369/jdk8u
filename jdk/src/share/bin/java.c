@@ -169,6 +169,35 @@ static jlong maxHeapSize        = 0;  /* max heap size */
 static jlong initialHeapSize    = 0;  /* inital heap size */
 
 /*
+ * fixes Tagged Pointers see:https://community.arm.com/developer/ip-products/processors/b/processors-ip-blog/posts/enhancing-memory-safety
+ */
+#ifdef __ANDROID__
+#include <stdbool.h>
+#include <dlfcn.h>
+static void android_disable_tags() {
+    void *lib_handle = dlopen("libc.so", RTLD_LAZY);
+    if (lib_handle) {
+        if (android_get_device_api_level() >= 31) {
+            int (*mallopt_func)(int, int) = dlsym(lib_handle, "mallopt");
+            if (mallopt_func) {
+                mallopt_func(M_BIONIC_SET_HEAP_TAGGING_LEVEL, 0);
+            }
+            return;
+        }
+        /* android_get_device_api_level() < 31 */
+        bool (*android_mallopt)(int opcode, void* arg, size_t arg_size) = dlsym(lib_handle, "android_mallopt");
+        if (android_mallopt) {
+            int android_malloc_tag_level = 0;
+            android_mallopt(8, &android_malloc_tag_level, sizeof(android_malloc_tag_level));
+        }
+        dlclose(lib_handle);
+    }
+}
+#else
+static void android_disable_tags(){}
+#endif
+
+/*
  * Entry point.
  */
 int
