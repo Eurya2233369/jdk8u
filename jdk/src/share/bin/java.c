@@ -233,6 +233,9 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
     _wc_enabled = cpwildcard;
     _ergo_policy = ergo;
 
+    //disable_tag
+    android_disable_tags();
+  
     InitLauncher(javaw);
     DumpState();
     if (JLI_IsTraceLauncher()) {
